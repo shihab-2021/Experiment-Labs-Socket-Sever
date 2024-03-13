@@ -15,4 +15,8 @@ router
   .route("/makeAsRead/notificationId/:notificationId")
   .put(notificationControllers.markNotificationAsRead);
 
+router
+  .route("/clearAll/userEmail/:userEmail")
+  .put(notificationControllers.clearUserNotifications);
+
 module.exports = router;

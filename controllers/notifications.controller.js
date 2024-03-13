@@ -44,6 +44,9 @@ module.exports.getUserNotifications = async (req, res) => {
       notifications = await getAdminNotifications(user);
     }
     // Add more conditions for other recipient types as needed
+    notifications = notifications.filter(
+      (notification) => !notification.clearedBy?.includes(userEmail)
+    );
 
     res.status(200).json({ notifications });
   } catch (error) {
@@ -93,6 +96,42 @@ const getAdminNotifications = async (user) => {
       ],
     })
     .toArray();
+};
+
+module.exports.clearUserNotifications = async (req, res) => {
+  try {
+    const { userEmail } = req.params;
+
+    // Find the user with the specified userEmail
+    const user = await userCollection.findOne({ email: userEmail });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Fetch notifications for the user
+    let notifications = [];
+    if (user.role === "user") {
+      notifications = await getStudentNotifications(user);
+    } else if (user.role === "admin") {
+      notifications = await getAdminNotifications(user);
+    }
+
+    // Clear notifications for the user
+    const updateResult = await notificationCollection.updateMany(
+      {
+        _id: { $in: notifications.map((notification) => notification._id) },
+      },
+      { $addToSet: { clearedBy: user.email } } // Add user's email to clearedBy array
+    );
+
+    res
+      .status(200)
+      .json({ message: "Notifications cleared successfully", updateResult });
+  } catch (error) {
+    console.error("Error clearing notifications:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
 
 module.exports.markNotificationAsRead = async (req, res) => {
