@@ -12,7 +12,7 @@ function setupSocket(server) {
 
   io = socketIo(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: "*",
       methods: ["GET", "POST"],
       credentials: true,
     },
