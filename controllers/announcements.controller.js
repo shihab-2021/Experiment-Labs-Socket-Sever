@@ -45,38 +45,6 @@ module.exports.getAnnouncementsByOrganization = async (req, res) => {
   }
 };
 
-// module.exports.markAnnouncementAsRead = async (req, res) => {
-//   try {
-//     // Extract announcement ID from request parameters
-//     const { announcementId } = req.params;
-
-//     // Validate announcementId
-//     if (!ObjectId.isValid(announcementId)) {
-//       return res.status(400).json({ message: "Invalid announcementId" });
-//     }
-
-//     // Extract user's email from request body
-//     const { userEmail } = req.body;
-
-//     // Update the announcement document to add user's email to readBy array
-//     const updatedAnnouncement = await announcementCollection.findOneAndUpdate(
-//       { _id: ObjectId(announcementId) },
-//       { $addToSet: { readBy: userEmail } }, // Use $addToSet to avoid duplicate emails
-//       { returnOriginal: false } // Return the updated document
-//     );
-
-//     // Check if the announcement exists and is updated
-//     if (!updatedAnnouncement.value) {
-//       return res.status(404).json({ message: "Announcement not found" });
-//     }
-
-//     // Return the updated announcement
-//     res.status(200).json({ announcement: updatedAnnouncement.value });
-//   } catch (error) {
-//     console.error("Error marking announcement as read:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
 module.exports.markAnnouncementAsRead = async (req, res) => {
   try {
     // Extract announcement ID from request parameters
@@ -87,40 +55,23 @@ module.exports.markAnnouncementAsRead = async (req, res) => {
       return res.status(400).json({ message: "Invalid announcementId" });
     }
 
-    // Extract user's email and role from request body
-    const { userEmail, userRole } = req.body;
+    // Extract user's email from request body
+    const { userEmail } = req.body;
 
-    // Check if the user is an admin
-    if (userRole === "admin") {
-      // Delete the announcement document from the database
-      const deleteResult = await announcementCollection.deleteOne({
-        _id: ObjectId(announcementId),
-      });
+    // Update the announcement document to add user's email to readBy array
+    const updatedAnnouncement = await announcementCollection.findOneAndUpdate(
+      { _id: ObjectId(announcementId) },
+      { $addToSet: { readBy: userEmail } }, // Use $addToSet to avoid duplicate emails
+      { returnOriginal: false } // Return the updated document
+    );
 
-      // Check if the announcement is deleted
-      if (deleteResult.deletedCount === 0) {
-        return res.status(404).json({ message: "Announcement not found" });
-      }
-
-      return res
-        .status(200)
-        .json({ message: "Announcement deleted successfully" });
-    } else {
-      // Update the announcement document to add user's email to readBy array
-      const updatedAnnouncement = await announcementCollection.findOneAndUpdate(
-        { _id: ObjectId(announcementId) },
-        { $addToSet: { readBy: userEmail } }, // Use $addToSet to avoid duplicate emails
-        { returnOriginal: false } // Return the updated document
-      );
-
-      // Check if the announcement exists and is updated
-      if (!updatedAnnouncement.value) {
-        return res.status(404).json({ message: "Announcement not found" });
-      }
-
-      // Return the updated announcement
-      res.status(200).json({ announcement: updatedAnnouncement.value });
+    // Check if the announcement exists and is updated
+    if (!updatedAnnouncement.value) {
+      return res.status(404).json({ message: "Announcement not found" });
     }
+
+    // Return the updated announcement
+    res.status(200).json({ announcement: updatedAnnouncement.value });
   } catch (error) {
     console.error("Error marking announcement as read:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -137,23 +88,41 @@ module.exports.markAnnouncementAsRemoved = async (req, res) => {
       return res.status(400).json({ message: "Invalid announcementId" });
     }
 
-    // Extract user's email from request body
-    const { userEmail } = req.body;
+    // Extract user's email and role from request body
+    const { userEmail, userRole } = req.body;
 
-    // Update the announcement document to add user's email to removeBy array
-    const updatedAnnouncement = await announcementCollection.findOneAndUpdate(
-      { _id: ObjectId(announcementId) },
-      { $addToSet: { removeBy: userEmail } }, // Use $addToSet to avoid duplicate emails
-      { returnOriginal: false } // Return the updated document
-    );
+    // Check if the user is an admin
+    if (userRole === "admin") {
+      // Delete the announcement from the database
+      const deletionResult = await announcementCollection.deleteOne({
+        _id: ObjectId(announcementId),
+      });
 
-    // Check if the announcement exists and is updated
-    if (!updatedAnnouncement.value) {
-      return res.status(404).json({ message: "Announcement not found" });
+      // Check if the announcement is deleted
+      if (deletionResult.deletedCount === 0) {
+        return res.status(404).json({ message: "Announcement not found" });
+      }
+
+      // Return success message
+      return res
+        .status(200)
+        .json({ message: "Announcement deleted successfully" });
+    } else {
+      // Update the announcement document to add user's email to removeBy array
+      const updatedAnnouncement = await announcementCollection.findOneAndUpdate(
+        { _id: ObjectId(announcementId) },
+        { $addToSet: { removeBy: userEmail } }, // Use $addToSet to avoid duplicate emails
+        { returnOriginal: false } // Return the updated document
+      );
+
+      // Check if the announcement exists and is updated
+      if (!updatedAnnouncement.value) {
+        return res.status(404).json({ message: "Announcement not found" });
+      }
+
+      // Return the updated announcement
+      return res.status(200).json({ announcement: updatedAnnouncement.value });
     }
-
-    // Return the updated announcement
-    res.status(200).json({ announcement: updatedAnnouncement.value });
   } catch (error) {
     console.error("Error marking announcement as read:", error);
     res.status(500).json({ message: "Internal server error" });
